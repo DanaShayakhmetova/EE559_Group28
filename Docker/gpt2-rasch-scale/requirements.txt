@@ -1,0 +1,7 @@
+transformers
+evaluate
+datasets
+tokenizers
+accelerate
+
+
