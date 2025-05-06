@@ -4,10 +4,10 @@ Link to the weights for the trained model gpt2-rasch-scale (git doesn't support 
 https://www.swisstransfer.com/d/a953c5bd-5503-4944-934e-e4ad579719ca
 
 
-GPT Implicit Hate Model:
+#### GPT Implicit Hate Model:
 [Swiss transfer link](https://www.swisstransfer.com/d/3fe1c998-f216-4dfa-8759-ac2dbf9b2236)
 
-# Loading trained model and tokenizer 
+#### Loading trained model and tokenizer 
 model = GPT2LMHeadModel.from_pretrained("gpt2-implicit-hate/final")
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2-implicit-hate/final")
 tokenizer.pad_token = tokenizer.eos_token
