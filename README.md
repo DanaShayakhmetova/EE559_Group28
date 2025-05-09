@@ -13,3 +13,8 @@ tokenizer = GPT2Tokenizer.from_pretrained("gpt2-implicit-hate/final")
 tokenizer.pad_token = tokenizer.eos_token
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
+
+
+#### Bert model:
+[Swiss transfer link](https://www.swisstransfer.com/d/e9ae2ef0-f406-4d08-91a4-39344d89d5b8)
+
