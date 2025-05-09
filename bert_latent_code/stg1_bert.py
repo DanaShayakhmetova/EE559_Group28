@@ -64,11 +64,12 @@ class HateDataset(torch.utils.data.Dataset):
         self.labels = labels
     def __getitem__(self, idx):
         return {
-            key: torch.tensor(val[idx])
+            key: val[idx].clone().detach() if isinstance(val[idx], torch.Tensor) else torch.tensor(val[idx])
             for key, val in self.encodings.items()
         } | {
-            'labels': torch.tensor(self.labels[idx])
+            'labels': torch.tensor(self.labels[idx], dtype=torch.long)
         }
+
     def __len__(self):
         return len(self.labels)
 
@@ -79,10 +80,11 @@ val_dataset = HateDataset(val_encodings, val_labels)
 #Model
 from transformers import BertForSequenceClassification, Trainer, TrainingArguments
 
+
 def compute_metrics(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
-    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted')
+    precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average='weighted', zero_division=1)
     acc = accuracy_score(labels, preds)
     return {
         'accuracy': acc,
@@ -90,6 +92,7 @@ def compute_metrics(pred):
         'recall': recall,
         'f1': f1,
     }
+
 
 #Model loading - Classic BERT with 3 different labels (coherent with our nb of classes)
 
@@ -100,7 +103,7 @@ model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_l
 
 training_args = TrainingArguments(
     output_dir='./results',
-    evaluation_strategy='epoch',
+    eval_strategy='epoch',
     save_strategy='epoch',
     per_device_train_batch_size=16,
     per_device_eval_batch_size=32,
@@ -108,7 +111,7 @@ training_args = TrainingArguments(
     logging_dir='./logs',
     logging_steps=10,
     load_best_model_at_end=True,
-    metric_for_best_model='accuracy',
+    metric_for_best_model='eval_accuracy',
     save_total_limit=1,
 )
 
@@ -121,9 +124,9 @@ trainer = Trainer(
 )
 trainer.train()
 
-
 trainer.evaluate()
 
 
-model.save_pretrained('./saved_model_stg1_bert')
-tokenizer.save_pretrained('./saved_model_stg1_bert')
+#model.save_pretrained('./saved_model_stg1_bert')
+#tokenizer.save_pretrained('./saved_model_stg1_bert')
+
