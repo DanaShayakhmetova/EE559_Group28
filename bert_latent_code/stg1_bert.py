@@ -15,9 +15,11 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 import torchvision.utils as utils
 import torchvision.transforms as transforms
+from latent_hate_dataset import LatentHateDataset
 
 from datasets import Dataset
 from transformers import BertTokenizer
+from transformers import BertForSequenceClassification, Trainer, TrainingArgumentss
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -31,10 +33,8 @@ df = pd.read_csv('implicit_hate_v1_stg1_posts.tsv', sep='\t')
 #Check class distribution
 print(df['class'].value_counts())
 
-
 X = df['post']
 y = df['class']
-
 
 #Encode labels
 le = LabelEncoder()
@@ -50,37 +50,16 @@ train_texts, val_texts, train_labels, val_labels = train_test_split(
 )
 
 #Tokenization
-
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 train_encodings = tokenizer(train_texts, truncation=True, padding=True, max_length=128)
 val_encodings = tokenizer(val_texts, truncation=True, padding=True, max_length=128)
 
-import torch
-
-class HateDataset(torch.utils.data.Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = labels
-    def __getitem__(self, idx):
-        return {
-            key: val[idx].clone().detach() if isinstance(val[idx], torch.Tensor) else torch.tensor(val[idx])
-            for key, val in self.encodings.items()
-        } | {
-            'labels': torch.tensor(self.labels[idx], dtype=torch.long)
-        }
-
-    def __len__(self):
-        return len(self.labels)
-
-train_dataset = HateDataset(train_encodings, train_labels)
-val_dataset = HateDataset(val_encodings, val_labels)
+train_dataset = LatentHateDataset(train_encodings, train_labels)
+val_dataset = LatentHateDataset(val_encodings, val_labels)
 
 
 #Model
-from transformers import BertForSequenceClassification, Trainer, TrainingArguments
-
-
 def compute_metrics(pred):
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
@@ -97,8 +76,6 @@ def compute_metrics(pred):
 #Model loading - Classic BERT with 3 different labels (coherent with our nb of classes)
 
 model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=3)  
-
-
 #Defining the training arguments
 
 training_args = TrainingArguments(
