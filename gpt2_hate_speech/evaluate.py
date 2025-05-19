@@ -20,14 +20,13 @@ def run_metric_evalution():
 
     seed = 42
 
-    tokenizer_small, _, small_model = gpt2_reg.GPT2Regression.load_model("./weights/gpt2-small-regression-finetuned")
-    tokenizer_large, _, large_model = gpt2_reg.GPT2Regression.load_model("./weights/gpt2-large-regression-finetuned")
+    tokenizer_small, _, small_model = gpt2_reg.GPT2Regression.load_model("./gpt2-small-regression-finetuned")
+    tokenizer_large, _, large_model = gpt2_reg.GPT2Regression.load_model("./gpt2-large-regression-finetuned")
 
     _, temp_df = train_test_split(df, test_size=0.2, random_state=seed)
     _, test_df = train_test_split(temp_df, test_size=0.5, random_state=seed)
 
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     small_model.to(device)

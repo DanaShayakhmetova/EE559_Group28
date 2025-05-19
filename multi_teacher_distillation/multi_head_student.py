@@ -53,8 +53,11 @@ class MultiHeadStudent(torch.nn.Module):
             embedding = dropout(embedding)
 
         if from_batch == 'classification':
-            return self.classification_head(embedding)
+            logits =  self.classification_head(embedding)
+            return {'logits' : logits, 'embedding' : embedding}
+        
         elif from_batch == 'regression':
-            return self.regression_head(embedding)
+            logits = self.regression_head(embedding)
+            return {'logits' : logits, 'embedding' : embedding}
         else :
             raise ValueError("The task shoudl either be 'classification' or 'regression'!")
