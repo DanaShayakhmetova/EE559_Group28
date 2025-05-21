@@ -19,7 +19,8 @@ def train_one_epoch(student_model,
                     classification_metrics,
                     regression_metrics,
                     alpha=0.5,
-                    temperature=2.0):
+                    temperature=2.0,
+                    epoch=0):
     """
     Train the multi-head student model for one epoch using heterogeneous teacher models to distill knowledge.
     The student model has two heads, one for classification and one for regression.
@@ -87,7 +88,7 @@ def train_one_epoch(student_model,
             head_c_loss += total_loss.item()
             
         elif from_batch == 'regression':
-            labels = labels.view(-1, 1)
+            labels = labels.view(-1)
 
             with torch.no_grad():
                 # Regression teacher's output 
@@ -121,18 +122,25 @@ def train_one_epoch(student_model,
     
     epoch_c_loss = head_c_loss / len(classification_loader)
     epoch_r_loss = head_r_loss / len(regression_loader)
+    epoch_results ={
+        "epoch": epoch + 1,
+        "classification_loss": epoch_c_loss,
+        "regression_loss": epoch_r_loss,
+    }
 
-    for metric_name in head_c_metrics.keys():
+    for metric_name, metric_value in head_c_metrics:
+        epoch_results[f"classification_{metric_name}"] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
         head_c_metrics[metric_name] /= len(classification_loader)
 
-    for metric_name in head_r_metrics.keys():
+    for metric_name, metric_value in head_r_metrics:
+        epoch_results[f"regression_{metric_name}"] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
         head_r_metrics[metric_name] /= len(regression_loader)
 
 
     print(f"Classification head loss: {epoch_c_loss:.4f}")
     print(f"Regression head loss: {epoch_r_loss:.4f}")
 
-    return epoch_c_loss, epoch_r_loss
+    return epoch_c_loss, epoch_r_loss, epoch_results
 
 
 def train(model, 
@@ -167,11 +175,12 @@ def train(model,
 
     regression_loss_log = []
     classification_loss_log = []
+    all_epoch_results = []
 
     print(f"training starting...")
     for epoch in tqdm(range(num_epochs)):
         print(f"Epoch {epoch + 1}/{num_epochs}")
-        c_loss, r_loss = train_one_epoch(model, 
+        c_loss, r_loss, epoch_results = train_one_epoch(model, 
                         regression_teacher, 
                         classification_teacher, 
                         regression_loader, 
@@ -183,12 +192,15 @@ def train(model,
                         classification_metrics,
                         regression_metrics,
                         alpha=alpha,
-                        temperature=temperature)
+                        temperature=temperature,
+                        epoch=epoch)
         print(f"Classification head loss: {c_loss:.4f}")
         print(f"Regression head loss: {r_loss:.4f}")
         classification_loss_log.append(c_loss)
         regression_loss_log.append(r_loss)
+        all_epoch_results.append(epoch_results)
 
+        pd.DataFrame(all_epoch_results).to_csv("multi_head_training_results.csv", index=False)
         pd.DataFrame(classification_loss_log).to_csv("classification_train_loss.csv", index=False)
         pd.DataFrame(regression_loss_log).to_csv("regression_train_loss.csv", index=False)
 

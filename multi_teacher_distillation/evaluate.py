@@ -46,9 +46,11 @@ def evaluate_one_epoch(model,
         with torch.no_grad():
             if from_batch == 'classification':
                 c_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
+                
                 c_head_loss = classification_criterion(c_head_student_out, labels)
                 c_epoch_loss += c_head_loss.item()
                 c_head_student_out = torch.argmax(c_head_student_out, dim=-1)
+                
                 labels = labels.cpu().numpy()
                 c_head_student_out = c_head_student_out.cpu().numpy()
                 for metric_name, metric_fn in metrics.items():
@@ -56,10 +58,14 @@ def evaluate_one_epoch(model,
 
             elif from_batch == 'regression':
                 r_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
+                labels = labels.view(-1)
+
                 r_head_loss = regression_criterion(r_head_student_out, labels)
                 r_epoch_loss += r_head_loss.item()
+                
                 labels = labels.cpu().numpy()
                 r_head_student_out = r_head_student_out.cpu().numpy()
+                
                 for metric_name, metric_fn in metrics.items():
                     r_head_metrics[metric_name] += metric_fn(r_head_student_out, labels)
             else:
