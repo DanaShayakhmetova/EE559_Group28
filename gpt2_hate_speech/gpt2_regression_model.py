@@ -1,8 +1,8 @@
 from transformers import GPT2Tokenizer, GPT2Model, GPT2Config, GPT2PreTrainedModel, get_scheduler
 from sklearn.metrics import mean_squared_error, mean_absolute_error
-
 from torch import nn
 import torch
+import os
 
 class GPT2Regression(GPT2PreTrainedModel):
     def __init__(self, config): 
@@ -27,7 +27,7 @@ class GPT2Regression(GPT2PreTrainedModel):
         return {"loss" : loss, "logits" : pred}
     
     @staticmethod
-    def load_model(weight_path):
+    def load_model(weight_path, local_files_only=True):
         """
         Loads the model from the specified path.
         Args:
@@ -37,9 +37,13 @@ class GPT2Regression(GPT2PreTrainedModel):
             tokenizer (GPT2Tokenizer): The tokenizer used for the model.
             config (GPT2Config): The configuration of the model.
             model (GPT2Regression): The loaded model.
+
+        Notes:
+            - The model, tokenizer and config must be in a local directory.
         """
-        tokenizer = GPT2Tokenizer.from_pretrained(weight_path)
-        config = GPT2Config.from_pretrained(weight_path)
-        model = GPT2Regression.from_pretrained(weight_path)
+
+        tokenizer = GPT2Tokenizer.from_pretrained(weight_path, local_files_only=local_files_only, )
+        config = GPT2Config.from_pretrained(weight_path, local_files_only=local_files_only)
+        model = GPT2Regression.from_pretrained(weight_path, local_files_only=local_files_only)
         
         return tokenizer, config, model
