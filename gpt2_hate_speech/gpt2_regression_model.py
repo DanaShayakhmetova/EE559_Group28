@@ -47,3 +47,21 @@ class GPT2Regression(GPT2PreTrainedModel):
         model = GPT2Regression.from_pretrained(weight_path, local_files_only=local_files_only)
         
         return tokenizer, config, model
+    
+    def save_weights(self, save_path):
+        """
+        Saves the model to the specified path.
+        Args:
+            save_path (str): Path to save the model weights.
+        """
+
+        self.save_pretrained(save_path)
+        self.gpt2.save_pretrained(save_path)
+
+        reg_path = save_path + '/regression_head'
+        if not os.path.exists(reg_path):
+            os.makedirs(reg_path)
+        
+        torch.save(self.reg_head.state_dict(), save_path + '/regression_head.pth')
+
+

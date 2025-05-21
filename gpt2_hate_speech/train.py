@@ -12,7 +12,7 @@ from transformers import GPT2Tokenizer, GPT2Model, GPT2PreTrainedModel, get_sche
 
 from gpt2_regression_model import GPT2Regression
 from hate_speech_dataset import HateSpeechDataset
-
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 dataset = load_dataset("ucberkeley-dlab/measuring-hate-speech", "default")
 df = dataset['train'].to_pandas()
@@ -33,6 +33,13 @@ test_labels = test_df["hate_speech_score"].to_list()
 
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2-large")
 tokenizer.pad_token = tokenizer.eos_token
+
+
+regression_metric = {
+    'mse': mean_squared_error,
+    'mae': mean_absolute_error
+}
+
 
 # Create the different tokenized dataset and prepare the dataloader
 train_dataset = HateSpeechDataset(train_text, train_labels, tokenizer)
@@ -58,26 +65,52 @@ lr_scheduler = get_scheduler("linear",
                              num_warmup_steps=5, 
                              num_training_steps=len(train_dataset) * 3)
 
+all_epoch_results = []
 loss_at_epoch = []
+
+regression_metric = dict(zip(regression_metric.keys(), [evaluate.load(metric) for metric in regression_metric.keys()]))
+
 print(f"Training on {device}")
 for epoch in range(3):
     model.train()
     total_loss = 0
     for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
+
+        epoch_result = {
+            "epoch": epoch + 1,
+        }
+        
         batch = {k: v.to(device) for k, v in batch.items()}
         outputs = model(**batch)
         loss = outputs["loss"]
         loss.backward()
         optimizer.step()
         lr_scheduler.step()
+
         optimizer.zero_grad()
+        
         total_loss += loss.item()
 
+        epoch_result["loss"] = loss.item()
+
+        with torch.no_grad():
+            for metric_name, metric_fn in regression_metric.items():
+                pred = outputs["logits"].cpu().numpy()
+                labels = batch["labels"].cpu().numpy()
+                metric_value = metric_fn(pred, labels)
+                regression_metric[metric_name] += metric_value
+                print(f"{metric_name}: {metric_value:.4f}")
+    
+    for metric_name, metric_value in regression_metric.items():
+        epoch_result[metric_name] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
+        regression_metric[metric_name] /= len(train_loader)
+    
+    all_epoch_results.append(epoch_result)
     loss_at_epoch.append(total_loss/len(train_loader))
     print(f"Epoch {epoch+1} Loss: {total_loss/len(train_loader)}")
 
 
-model.save_pretrained("./gpt2-large-regression-finetuned")
+model.save_weights("./gpt2-large-regression-finetuned")
 tokenizer.save_pretrained("./gpt2-large-regression-finetuned")
 dataframe = pd.DataFrame(loss_at_epoch, columns=["loss"])
 dataframe.to_csv("loss_at_epoch_large.csv", index=False)
