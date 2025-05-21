@@ -1,5 +1,6 @@
 import torch 
 import torch.nn.functional as F
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -67,6 +68,8 @@ def train_one_epoch(student_model,
         attention_mask = data['attention_mask'].to(device)
         labels = data['labels'].to(device)
 
+
+
         if from_batch == 'classification':
             with torch.no_grad():
                 # Three classes teacher classifier
@@ -84,6 +87,8 @@ def train_one_epoch(student_model,
             head_c_loss += total_loss.item()
             
         elif from_batch == 'regression':
+            labels = labels.view(-1, 1)
+
             with torch.no_grad():
                 # Regression teacher's output 
                 r_teacher_out = regression_teacher(input_ids, attention_mask=attention_mask)["logits"]
@@ -110,7 +115,6 @@ def train_one_epoch(student_model,
             else:
                 r_head_student_out = r_head_student_out.squeeze(-1).cpu().numpy()
                 labels = labels.cpu().numpy()
-                r_head_student_out = r_head_student_out.cpu().numpy()
                 for metric_name, metric_fn in regression_metrics.items():
                     head_r_metrics[metric_name] += metric_fn(r_head_student_out, labels)
 
@@ -144,25 +148,25 @@ def train(model,
     """
     Train the multi-head student model using two heterogeneous teacher models.
     """
-    
-    # Define the loss functions
+
     regression_criterion = torch.nn.MSELoss()
     classification_criterion = torch.nn.CrossEntropyLoss()
 
-    # Define the metrics
     classification_metrics = {
         'accuracy': accuracy_score,
-        'precision': precision_score,
-        'recall': recall_score,
-        'f1': f1_score
-    }
-
-    regression_metrics = {
-        'mse': torch.nn.MSELoss(),
-        'mae': torch.nn.L1Loss()
+        'precision': lambda y_pred, y_true: precision_score(y_true, y_pred, average='macro', zero_division=0),
+        'recall': lambda y_pred, y_true: recall_score(y_true, y_pred, average='macro', zero_division=0),
+        'f1': lambda y_pred, y_true: f1_score(y_true, y_pred, average='macro', zero_division=0)
     }
     
+    regression_metrics = {
+        'mse': mean_squared_error,
+        'mae': mean_absolute_error
+    }
     model.to(device)
+
+    regression_loss_log = []
+    classification_loss_log = []
 
     print(f"training starting...")
     for epoch in tqdm(range(num_epochs)):
@@ -182,12 +186,17 @@ def train(model,
                         temperature=temperature)
         print(f"Classification head loss: {c_loss:.4f}")
         print(f"Regression head loss: {r_loss:.4f}")
+        classification_loss_log.append(c_loss)
+        regression_loss_log.append(r_loss)
+
+        pd.DataFrame(classification_loss_log).to_csv("classification_train_loss.csv", index=False)
+        pd.DataFrame(regression_loss_log).to_csv("regression_train_loss.csv", index=False)
 
     # Save the model 
     model_dir = "multi_head_student_model"
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    model.save_pretrained(model_dir)
+    model.save_weights('./multi_head_weights')
     tokenizer = model.tokenizer
     tokenizer.save_pretrained(model_dir)
     print(f"Model saved to {model_dir}")

@@ -1,5 +1,6 @@
 from transformers import BertTokenizer, BertModel
 import torch 
+import os
 
 class MultiHeadStudent(torch.nn.Module):
     """
@@ -58,6 +59,56 @@ class MultiHeadStudent(torch.nn.Module):
         
         elif from_batch == 'regression':
             logits = self.regression_head(embedding)
+
             return {'logits' : logits, 'embedding' : embedding}
+        elif from_batch == 'both':
+            logits_c = self.classification_head(embedding)
+            logits_r = self.regression_head(embedding)
+            return {'logits_c' : logits_c, 'logits_r' : logits_r, 'embedding' : embedding}
         else :
             raise ValueError("The task shoudl either be 'classification' or 'regression'!")
+        
+
+    def save_weights(self, save_path):
+        """
+        Save the model weights to the given path
+        """
+
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        
+        # Save the BERT model
+        self.encoder.save_pretrained(save_path)
+
+
+        classification_path = save_path + '/classification_head'
+        regression_path = save_path + '/regression_head'
+
+        if not os.path.exists(classification_path):
+            os.makedirs(classification_path)
+        
+        if not os.path.exists(regression_path):
+            os.makedirs(regression_path)
+
+        # Save the two heads
+        torch.save(self.classification_head.state_dict(), save_path + '/classification_head.pth')
+        torch.save(self.regression_head.state_dict(), save_path + '/regression_head.pth')
+
+        self.tokenizer.save_pretrained(save_path)
+        return save_path
+    
+    def load_weights(self, save_path):
+        """
+        Load the model weights from the given path
+        """
+
+        # Load the BERT model
+        self.encoder = BertModel.from_pretrained(save_path)
+
+        # Load the two heads
+        self.classification_head.load_state_dict(torch.load(save_path + '/classification_head.pth'))
+        self.regression_head.load_state_dict(torch.load(save_path + '/regression_head.pth'))
+
+        self.tokenizer = BertTokenizer.from_pretrained(save_path)
+
+        return 
