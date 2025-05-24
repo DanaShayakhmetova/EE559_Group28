@@ -18,3 +18,6 @@ model = model.to(device)
 #### Bert model:
 [Swiss transfer link](https://www.swisstransfer.com/d/e9ae2ef0-f406-4d08-91a4-39344d89d5b8)
 
+### DeBERTa modelL
+
+[Swiss transfer link] (https://www.swisstransfer.com/d/ad4e9e6e-8ee6-446c-8f79-6bc7884b3dea)
