@@ -1,17 +1,16 @@
 import torch
-from torch import nn
 from torch.utils.data import DataLoader, Dataset
 from datasets import load_dataset
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-import evaluate
 from torch.optim import AdamW
 from transformers import GPT2Config
 from transformers import GPT2Tokenizer, GPT2Model, GPT2PreTrainedModel, get_scheduler
+from gpt2_hate_speech.evaluate_regression import run_metric_evalution
 
-from gpt2_regression_model import GPT2Regression
-from hate_speech_dataset import HateSpeechDataset
+from gpt2_hate_speech.gpt2_regression_model import GPT2Regression
+from gpt2_hate_speech.hate_speech_dataset import HateSpeechDataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 dataset = load_dataset("ucberkeley-dlab/measuring-hate-speech", "default")
@@ -35,7 +34,7 @@ tokenizer = GPT2Tokenizer.from_pretrained("gpt2-large")
 tokenizer.pad_token = tokenizer.eos_token
 
 
-regression_metric = {
+metric = {
     'mse': mean_squared_error,
     'mae': mean_absolute_error
 }
@@ -46,13 +45,13 @@ train_dataset = HateSpeechDataset(train_text, train_labels, tokenizer)
 val_dataset = HateSpeechDataset(val_text, val_labels, tokenizer)
 test_dataset = HateSpeechDataset(test_text, test_labels, tokenizer)
 
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=4)
+train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=1)
 torch.cuda.empty_cache()
 
 # Prepare the model using the pretrained GPT2 config and model
-config = GPT2Config.from_pretrained("gpt2-large")
-model = GPT2Regression.from_pretrained("gpt2-large", config=config)
+config = GPT2Config.from_pretrained("gpt2-medium")
+model = GPT2Regression.from_pretrained("gpt2-medium", config=config)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
@@ -68,12 +67,16 @@ lr_scheduler = get_scheduler("linear",
 all_epoch_results = []
 loss_at_epoch = []
 
-regression_metric = dict(zip(regression_metric.keys(), [evaluate.load(metric) for metric in regression_metric.keys()]))
+regression_metric = dict(zip(metric.keys(), torch.zeros(len(metric), device=device)))
 
 print(f"Training on {device}")
-for epoch in range(3):
+for epoch in range(5):
     model.train()
     total_loss = 0
+
+    epoch_predictions = []
+    epoch_labels = []
+
     for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
 
         epoch_result = {
@@ -93,26 +96,40 @@ for epoch in range(3):
 
         epoch_result["loss"] = loss.item()
 
+
         with torch.no_grad():
-            for metric_name, metric_fn in regression_metric.items():
+            for metric_name, metric_fn in metric.items():
                 pred = outputs["logits"].cpu().numpy()
                 labels = batch["labels"].cpu().numpy()
+
+                epoch_predictions.append(pred)
+                epoch_labels.append(labels)
+
                 metric_value = metric_fn(pred, labels)
                 regression_metric[metric_name] += metric_value
-                print(f"{metric_name}: {metric_value:.4f}")
     
-    for metric_name, metric_value in regression_metric.items():
-        epoch_result[metric_name] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
-        regression_metric[metric_name] /= len(train_loader)
-    
+    for metric_name, metric_fn in metric.items():
+        epoch_result[metric_name] = metric_fn(epoch_predictions, epoch_labels)
+        
+
     all_epoch_results.append(epoch_result)
+    
+    epoch_result["epoch_loss"] = total_loss / len(train_loader)
+    all_epoch_results.append(epoch_result)
+
+    pd.DataFrame(all_epoch_results).to_csv("epoch_results.csv", index=False)
+
     loss_at_epoch.append(total_loss/len(train_loader))
-    print(f"Epoch {epoch+1} Loss: {total_loss/len(train_loader)}")
 
 
-model.save_weights("./gpt2-large-regression-finetuned")
-tokenizer.save_pretrained("./gpt2-large-regression-finetuned")
+model.save_weights("./gpt2-medium-regression-finetuned-fixed")
+tokenizer.save_pretrained("./gpt2-medium-regression-finetuned-fixed")
 dataframe = pd.DataFrame(loss_at_epoch, columns=["loss"])
-dataframe.to_csv("loss_at_epoch_large.csv", index=False)
+dataframe.to_csv("medium.csv", index=False)
 
-
+run_metric_evalution("./gpt2-medium-regression-finetuned-fixed",
+                     test_loader=val_loader,
+                     metric=metric,
+                     num_epoch=5,
+                     log_path = "./eval-logs-gpt2-medium/",
+                     device=device)

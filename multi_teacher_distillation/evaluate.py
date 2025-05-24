@@ -1,11 +1,12 @@
 import torch
 from tqdm import tqdm
 import pandas as pd
+import os
+import numpy as np
 
 def evaluate_one_epoch(model,
              classification_criterion,
              regression_criterion,
-             metrics,
              test_loader_c,
              classification_metrics,
              regression_metrics,
@@ -22,13 +23,17 @@ def evaluate_one_epoch(model,
     r_epoch_loss = 0
     c_epoch_loss = 0
 
-    r_head_metrics = dict(zip(regression_metrics.keys(), torch.zeros(len(regression_metrics), device=device)))
-    c_head_metrics = dict(zip(classification_metrics.keys(), torch.zeros(len(classification_metrics), device=device)))
-
     regression_loader = iter(test_loader_r)
     classification_loader = iter(test_loader_c)
     n_batches = len(test_loader_r) + len(test_loader_c)
 
+    epoch_reg_predictions = []
+    epoch_reg_labels = []
+
+    epoch_class_preds = []
+    epoch_class_labels = []
+
+    
     assert len(test_loader_r) == len(test_loader_c) and n_batches == 2 * len(test_loader_r), "The two dataloaders should have the same length"
 
     for i in tqdm(range(n_batches), desc="Evaluating", leave=False):
@@ -53,50 +58,45 @@ def evaluate_one_epoch(model,
                 
                 labels = labels.cpu().numpy()
                 c_head_student_out = c_head_student_out.cpu().numpy()
-                for metric_name, metric_fn in metrics.items():
-                    c_head_metrics[metric_name] += metric_fn(c_head_student_out, labels)
+
+                epoch_class_preds.append(c_head_student_out)
+                epoch_class_labels.append(labels)
 
             elif from_batch == 'regression':
                 r_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
-                labels = labels.view(-1)
+                # labels = labels.view(-1, 1)
 
                 r_head_loss = regression_criterion(r_head_student_out, labels)
                 r_epoch_loss += r_head_loss.item()
                 
-                labels = labels.cpu().numpy()
-                r_head_student_out = r_head_student_out.cpu().numpy()
-                
-                for metric_name, metric_fn in metrics.items():
-                    r_head_metrics[metric_name] += metric_fn(r_head_student_out, labels)
+                labels = labels.view(-1).cpu().numpy()
+                r_head_student_out = r_head_student_out.view(-1).cpu().numpy()
+
+                epoch_reg_predictions.extend(r_head_student_out.tolist())
+                epoch_reg_labels.extend(labels.tolist())
+
             else:
                 raise ValueError("The task should either be 'classification' or 'regression'!")
             
     epoch_c_loss = c_epoch_loss / len(test_loader_c)
     epoch_r_loss = r_epoch_loss / len(test_loader_r)
 
-    for metric_name in c_head_metrics.keys():
-        c_head_metrics[metric_name] /= len(test_loader_c)
-    
-    for metric_name in r_head_metrics.keys():
-        r_head_metrics[metric_name] /= len(test_loader_r)
-
-    print(f"Classification head loss: {epoch_c_loss:.4f}")
-    print(f"Regression head loss: {epoch_r_loss:.4f}")
     epoch_results = {
         "epoch": epoch + 1,
         "classification_loss": epoch_c_loss,
         "regression_loss": epoch_r_loss,
     }
-    for metric_name in c_head_metrics.keys():
-        epoch_results[f"classification_{metric_name}"] = c_head_metrics[metric_name].item() if isinstance(c_head_metrics[metric_name], torch.Tensor) else c_head_metrics[metric_name]
-        print(f"Classification {metric_name}: {c_head_metrics[metric_name]:.4f}")
-    
-    for metric_name in r_head_metrics.keys():
-        epoch_results[f"regression_{metric_name}"] = r_head_metrics[metric_name].item() if isinstance(r_head_metrics[metric_name], torch.Tensor) else r_head_metrics[metric_name]
-        print(f"Regression {metric_name}: {r_head_metrics[metric_name]:.4f}")
-    
 
-    return epoch_c_loss, epoch_r_loss
+    concatenated_class_preds = np.concatenate(epoch_class_preds)
+    concatenated_class_labels = np.concatenate(epoch_class_labels)
+    
+    for metric_name, metric_fn in classification_metrics.items():
+        epoch_results[f"classification_{metric_name}"] = metric_fn(concatenated_class_preds, concatenated_class_labels)
+
+    for metric_name, metric_fn in regression_metrics.items():
+        epoch_results[f"regression_{metric_name}"] = metric_fn(epoch_reg_predictions, epoch_reg_labels)
+
+    return epoch_c_loss, epoch_r_loss, epoch_results
 
 
 def evaluate(model, 
@@ -107,11 +107,15 @@ def evaluate(model,
             test_loader_r,
             classification_metrics,
             regression_metrics,
+            eval_path,
             device):
     """
     Evaluate the two heads of the model on the test set.
     Both heads are evaluated on their respective test set.
     """
+
+    if not os.path.exists(eval_path):
+        os.makedirs(eval_path)
 
     regression_loss_log = []
     classification_loss_log = []
@@ -136,9 +140,9 @@ def evaluate(model,
 
         all_epoch_results.append(epoch_results)
 
-        pd.DataFrame(all_epoch_results).to_csv("all_eval_metrics.csv", index=False)
-        pd.DataFrame(classification_loss_log).to_csv("classification_eval_loss.csv", index=False)
-        pd.DataFrame(regression_loss_log).to_csv("regression_eval_loss.csv", index=False)
+        pd.DataFrame(all_epoch_results).to_csv(eval_path + "all_eval_metrics.csv", index=False)
+        pd.DataFrame(classification_loss_log).to_csv(eval_path + "classification_eval_loss.csv", index=False)
+        pd.DataFrame(regression_loss_log).to_csv(eval_path + "regression_eval_loss.csv", index=False)
 
     return model
 

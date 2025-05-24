@@ -1,4 +1,6 @@
 from transformers import BertTokenizer, BertModel
+from transformers import RobertaModel, RobertaTokenizer
+
 import torch 
 import os
 
@@ -18,11 +20,18 @@ class MultiHeadStudent(torch.nn.Module):
                  activation_function=torch.nn.ReLU,
                  use_dropout=False,
                  dropout_rate=0.1,
+                 roberta=False
                  ):
         super(MultiHeadStudent, self).__init__()
-        self.encoder = BertModel.from_pretrained(pretrained_model_name)
-        self.hidden_size = self.encoder.config.hidden_size
 
+        if roberta and pretrained_model_name == 'roberta-base':
+            self.encoder = RobertaModel.from_pretrained(pretrained_model_name)
+            self.tokenizer = RobertaTokenizer.from_pretrained(pretrained_model_name)
+        else:
+            self.encoder = BertModel.from_pretrained(pretrained_model_name)
+            self.tokenizer = BertTokenizer.from_pretrained(pretrained_model_name)
+
+        self.hidden_size = self.encoder.config.hidden_size
         self.use_activation = use_activation
         self.use_dropout = use_dropout
         self.use_pooler = use_pooler
@@ -35,7 +44,6 @@ class MultiHeadStudent(torch.nn.Module):
 
         # Regression head gives us the rasch score
         self.regression_head = torch.nn.Linear(self.encoder.config.hidden_size, 1)
-        self.tokenizer = BertTokenizer.from_pretrained(pretrained_model_name)
 
 
     def forward(self, input_ids, from_batch, attention_mask=None):

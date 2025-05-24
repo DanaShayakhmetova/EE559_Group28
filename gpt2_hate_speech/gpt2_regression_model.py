@@ -44,8 +44,15 @@ class GPT2Regression(GPT2PreTrainedModel):
 
         tokenizer = GPT2Tokenizer.from_pretrained(weight_path, local_files_only=local_files_only, )
         config = GPT2Config.from_pretrained(weight_path, local_files_only=local_files_only)
-        model = GPT2Regression.from_pretrained(weight_path, local_files_only=local_files_only)
         
+        model = GPT2Regression(config)
+        model.gpt2 = GPT2Model.from_pretrained(weight_path, config=config, local_files_only=local_files_only)
+
+        reg_head = nn.Linear(config.hidden_size, 1)
+        reg_head.load_state_dict(torch.load(weight_path + '/regression_head.pth'))
+
+        model.reg_head = reg_head
+
         return tokenizer, config, model
     
     def save_weights(self, save_path):
