@@ -19,8 +19,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 num_epochs = 5
-reg_test_size = 0.2
-class_test_size = 0.2
+reg_test_size = 0.8
+class_test_size = 0.8
 model_name = "small"
 
 print(f"Trying to load the models")
@@ -84,14 +84,6 @@ val_clustering_dataset = LatentHateDataset(val_clustering_encodings, val_labels)
 
 train_reg_dataset = HateSpeechDataset(train_reg_texts, train_reg_labels, tokenizer)
 val_reg_dataset = HateSpeechDataset(val_reg_texts, val_reg_labels, tokenizer)
-
-smallest_dataset = min(len(train_clustering_dataset), len(train_reg_dataset))
-train_clustering_dataset = Subset(train_clustering_dataset, range(smallest_dataset))
-train_reg_dataset = Subset(train_reg_dataset, range(smallest_dataset))
-
-smallest_val_dataset = min(len(val_clustering_dataset), len(val_reg_dataset))
-val_clustering_dataset = Subset(val_clustering_dataset, range(smallest_val_dataset))
-val_reg_dataset = Subset(val_reg_dataset, range(smallest_val_dataset))
 
 clustering_train_loader = DataLoader(train_clustering_dataset, batch_size=4, shuffle=True)
 clustering_val_loader = DataLoader(val_clustering_dataset, batch_size=4, shuffle=False)

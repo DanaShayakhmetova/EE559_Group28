@@ -23,8 +23,11 @@ def evaluate_one_epoch(model,
     r_epoch_loss = 0
     c_epoch_loss = 0
 
+    c_loader_size = len(test_loader_c)
+    r_loader_size = len(test_loader_r)
     regression_loader = iter(test_loader_r)
     classification_loader = iter(test_loader_c)
+
     n_batches = len(test_loader_r) + len(test_loader_c)
 
     epoch_reg_predictions = []
@@ -33,16 +36,15 @@ def evaluate_one_epoch(model,
     epoch_class_preds = []
     epoch_class_labels = []
 
-    
-    assert len(test_loader_r) == len(test_loader_c) and n_batches == 2 * len(test_loader_r), "The two dataloaders should have the same length"
-
     for i in tqdm(range(n_batches), desc="Evaluating", leave=False):
-        if i % 2 == 0:
+        if (i % 2 == 0 and c_loader_size != 0) or (r_loader_size == 0):
             data = next(classification_loader)
             from_batch = 'classification'
-        else:
+            c_loader_size -= 1
+        elif (i % 2 == 1 and r_loader_size != 0) or (c_loader_size == 0):
             data = next(regression_loader)
             from_batch = 'regression'
+            r_loader_size -= 1
 
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
@@ -63,18 +65,19 @@ def evaluate_one_epoch(model,
                 epoch_class_labels.append(labels)
 
             elif from_batch == 'regression':
-                r_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
-                # labels = labels.view(-1, 1)
+                r_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]  # shape [B, 1]
 
                 r_head_loss = regression_criterion(r_head_student_out, labels)
                 r_epoch_loss += r_head_loss.item()
-                
+
+                # Flatten both to [B]
                 labels = labels.view(-1).cpu().numpy()
                 r_head_student_out = r_head_student_out.view(-1).cpu().numpy()
 
+                print(f"r_head_student_out: {r_head_student_out}, labels: {labels}")
+
                 epoch_reg_predictions.extend(r_head_student_out.tolist())
                 epoch_reg_labels.extend(labels.tolist())
-
             else:
                 raise ValueError("The task should either be 'classification' or 'regression'!")
             

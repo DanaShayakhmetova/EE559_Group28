@@ -49,8 +49,9 @@ def train_one_epoch(student_model,
     head_r_metrics = dict(zip(regression_metrics.keys(), torch.zeros(len(regression_metrics), device=device)))
 
     n_batches = len(regression_loader) + len(classification_loader)
-    assert len(regression_loader) == len(classification_loader) and n_batches == 2 * len(regression_loader), "The two dataloaders should have the same length"
 
+    r_loader_size = len(regression_loader)
+    c_loader_size = len(classification_loader)
     classification_iter = iter(classification_loader)
     regression_iter = iter(regression_loader)
 
@@ -58,12 +59,14 @@ def train_one_epoch(student_model,
         
         optimizer.zero_grad()
         
-        if i % 2 == 0:
+        if (i % 2 == 0 and c_loader_size != 0) or (r_loader_size == 0):
             data = next(classification_iter)
             from_batch = 'classification'
-        else:
+            c_loader_size -= 1
+        elif (i % 2 == 1 and r_loader_size != 0) or (c_loader_size == 0):
             data = next(regression_iter)
             from_batch = 'regression'
+            r_loader_size -= 1
 
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
@@ -99,9 +102,9 @@ def train_one_epoch(student_model,
             # Put the logits on the shape : (batch_size, 1) so the size is (batch_size,)
             r_head_student_out = r_head_student_out.view(-1)
 
-            regression_loss = torch.nn.MSELoss()
+            total_loss = alpha * F.mse_loss(r_head_student_out, r_teacher_out) + (1 - alpha) * F.huber_loss(r_head_student_out, labels)
 
-            total_loss = alpha * regression_loss(r_teacher_out, labels) + (1 - alpha) * regression_criterion(r_head_student_out, labels)
+            # total_loss = alpha * regression_loss(r_teacher_out, labels) + (1 - alpha) * regression_criterion(r_head_student_out, labels)
             head_r_loss += total_loss.item()
         else:
             raise ValueError("The task should either be 'classification' or 'regression'!")
@@ -118,7 +121,6 @@ def train_one_epoch(student_model,
 
             else:
                 r_head_student_out = r_head_student_out.squeeze(-1).cpu().numpy()
-                print(f"r_head_student_out: {r_head_student_out}, labels: {labels}")
                 labels = labels.cpu().numpy()
 
                 epoch_reg_predictions.append(r_head_student_out)

@@ -68,12 +68,12 @@ def run_metric_evalution(weights_path,
                 logits = outputs["logits"]
                 
                 epoch_loss += loss.item()
+                
+                pred = outputs["logits"].cpu().numpy()
+                labels = batch["labels"].cpu().numpy()
 
-                labels = labels.cpu().numpy()
-                logits = logits.cpu().numpy()
-
-                epoch_predictions.append(logits)
-                epoch_labels.append(labels)
+                epoch_predictions.extend(pred.tolist())
+                epoch_labels.extend(labels.tolist())
 
 
         for metric_name, metric_fn in metric.items():

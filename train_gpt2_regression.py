@@ -95,19 +95,14 @@ for epoch in range(5):
         total_loss += loss.item()
 
         epoch_result["loss"] = loss.item()
-
-
+        
         with torch.no_grad():
-            for metric_name, metric_fn in metric.items():
-                pred = outputs["logits"].cpu().numpy()
-                labels = batch["labels"].cpu().numpy()
+            pred = outputs["logits"].cpu().numpy()
+            labels = batch["labels"].cpu().numpy()
 
-                epoch_predictions.append(pred)
-                epoch_labels.append(labels)
+            epoch_predictions.extend(pred.tolist())
+            epoch_labels.extend(labels.tolist())
 
-                metric_value = metric_fn(pred, labels)
-                regression_metric[metric_name] += metric_value
-    
     for metric_name, metric_fn in metric.items():
         epoch_result[metric_name] = metric_fn(epoch_predictions, epoch_labels)
         
