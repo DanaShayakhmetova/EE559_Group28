@@ -204,7 +204,7 @@ def fallback_extract_implied_statement(raw: str) -> str:
             ):
                 # STEP 3: Basic semantic sanity check: avoid contradictions like "X are X"
                 tokens = sent.lower().split()
-                if len(tokens) >= 3 and tokens[0] == tokens[3] and tokens[1] == 'are':
+                if len(tokens) < 3:
                     continue  
                 # clean_sents.append(sent)
                 return sent
