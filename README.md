@@ -18,7 +18,7 @@ model = model.to(device)
 
 **Small**:[Swiss transfer link](https://www.swisstransfer.com/d/1dc8448b-50c7-4a66-882b-78b8e1b3f938)
 
-**Large**: Will add link soon, it's loading 
+**Large**:[Swiss transfer link](https://www.swisstransfer.com/d/bc9c2a00-9ec9-4996-8b25-fa2e890ecbe7)
 
 
 #### Bert model:
