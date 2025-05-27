@@ -1,8 +1,11 @@
 # EE559_Group28
+#### [OLD, ignore] GPT2 Regression for Rasch scale model:
 
-Link to the weights for the trained model gpt2-rasch-scale (git doesn't support files that are too big)
-https://www.swisstransfer.com/d/a953c5bd-5503-4944-934e-e4ad579719ca
+[Swiss transfer link](https://www.swisstransfer.com/d/a953c5bd-5503-4944-934e-e4ad579719ca)
 
+#### [UPDATED, use these] GPT2 Regression for Rasch scale model:
+
+[Swiss transfer link](https://www.swisstransfer.com/d/30e38139-bb15-45c7-b0be-cc02d44ba79a)
 
 #### [OLD, ignore] GPT Implicit Hate Model:
 
