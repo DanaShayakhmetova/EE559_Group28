@@ -33,6 +33,7 @@ df = pd.read_csv('implicit_hate_v1_stg1_posts.tsv', sep='\t')
 #Check class distribution
 print(df['class'].value_counts())
 
+
 X = df['post']
 y = df['class']
 
@@ -104,6 +105,6 @@ trainer.train()
 trainer.evaluate()
 
 
-#model.save_pretrained('./saved_model_stg1_bert')
-#tokenizer.save_pretrained('./saved_model_stg1_bert')
+model.save_pretrained('./saved_model_stg1_bert')
+tokenizer.save_pretrained('./saved_model_stg1_bert')
 

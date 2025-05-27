@@ -49,8 +49,9 @@ def train_one_epoch(student_model,
     head_r_metrics = dict(zip(regression_metrics.keys(), torch.zeros(len(regression_metrics), device=device)))
 
     n_batches = len(regression_loader) + len(classification_loader)
-    assert len(regression_loader) == len(classification_loader) and n_batches == 2 * len(regression_loader), "The two dataloaders should have the same length"
 
+    r_loader_size = len(regression_loader)
+    c_loader_size = len(classification_loader)
     classification_iter = iter(classification_loader)
     regression_iter = iter(regression_loader)
 
@@ -58,18 +59,21 @@ def train_one_epoch(student_model,
         
         optimizer.zero_grad()
         
-        if i % 2 == 0:
+        if (i % 2 == 0 and c_loader_size != 0) or (r_loader_size == 0):
             data = next(classification_iter)
             from_batch = 'classification'
-        else:
+            c_loader_size -= 1
+        elif (i % 2 == 1 and r_loader_size != 0) or (c_loader_size == 0):
             data = next(regression_iter)
             from_batch = 'regression'
+            r_loader_size -= 1
 
         input_ids = data['input_ids'].to(device)
         attention_mask = data['attention_mask'].to(device)
         labels = data['labels'].to(device)
 
-
+        epoch_reg_predictions = []
+        epoch_reg_labels = []
 
         if from_batch == 'classification':
             with torch.no_grad():
@@ -95,10 +99,9 @@ def train_one_epoch(student_model,
                 r_teacher_out = regression_teacher(input_ids, attention_mask=attention_mask)["logits"]
             
             r_head_student_out = student_model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
+            r_head_student_out = r_head_student_out.view(-1)
 
-            regression_loss = torch.nn.MSELoss()
-
-            total_loss = alpha * regression_loss(r_teacher_out, labels) + (1 - alpha) * regression_criterion(r_head_student_out, labels)
+            total_loss = alpha * F.mse_loss(r_head_student_out, r_teacher_out) + (1 - alpha) * F.huber_loss(r_head_student_out, labels)
             head_r_loss += total_loss.item()
         else:
             raise ValueError("The task should either be 'classification' or 'regression'!")
@@ -116,6 +119,10 @@ def train_one_epoch(student_model,
             else:
                 r_head_student_out = r_head_student_out.squeeze(-1).cpu().numpy()
                 labels = labels.cpu().numpy()
+
+                epoch_reg_predictions.append(r_head_student_out)
+                epoch_reg_labels.append(labels)
+
                 for metric_name, metric_fn in regression_metrics.items():
                     head_r_metrics[metric_name] += metric_fn(r_head_student_out, labels)
 
@@ -128,14 +135,16 @@ def train_one_epoch(student_model,
         "regression_loss": epoch_r_loss,
     }
 
-    for metric_name, metric_value in head_c_metrics:
+    for metric_name, metric_value in head_c_metrics.items():
         epoch_results[f"classification_{metric_name}"] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
         head_c_metrics[metric_name] /= len(classification_loader)
 
-    for metric_name, metric_value in head_r_metrics:
+    for metric_name, metric_value in head_r_metrics.items():
         epoch_results[f"regression_{metric_name}"] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
         head_r_metrics[metric_name] /= len(regression_loader)
 
+    for metric_name, metric_fn in regression_metrics.items():
+        epoch_results[f"regression_(corrected){metric_name}"] = metric_fn(epoch_reg_predictions, epoch_reg_labels)
 
     print(f"Classification head loss: {epoch_c_loss:.4f}")
     print(f"Regression head loss: {epoch_r_loss:.4f}")
@@ -150,12 +159,17 @@ def train(model,
           classification_loader, 
           optimizer, 
           device,
+          model_dir,
+          log_path,
           num_epochs=5,
           alpha=0.5,
           temperature=2.0):
     """
     Train the multi-head student model using two heterogeneous teacher models.
     """
+
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)
 
     regression_criterion = torch.nn.MSELoss()
     classification_criterion = torch.nn.CrossEntropyLoss()
@@ -200,15 +214,14 @@ def train(model,
         regression_loss_log.append(r_loss)
         all_epoch_results.append(epoch_results)
 
-        pd.DataFrame(all_epoch_results).to_csv("multi_head_training_results.csv", index=False)
-        pd.DataFrame(classification_loss_log).to_csv("classification_train_loss.csv", index=False)
-        pd.DataFrame(regression_loss_log).to_csv("regression_train_loss.csv", index=False)
+        pd.DataFrame(all_epoch_results).to_csv(log_path + f"alpha={alpha}_multi_head_training_results.csv", index=False)
+        pd.DataFrame(classification_loss_log).to_csv(log_path + f"alpha={alpha}_classification_train_loss.csv", index=False)
+        pd.DataFrame(regression_loss_log).to_csv(log_path + f"alpha={alpha}_regression_train_loss.csv", index=False)
 
     # Save the model 
-    model_dir = "multi_head_student_model"
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
-    model.save_weights('./multi_head_weights')
+    model.save_weights(model_dir + f'alpha={alpha}_weights')
     tokenizer = model.tokenizer
     tokenizer.save_pretrained(model_dir)
     print(f"Model saved to {model_dir}")
