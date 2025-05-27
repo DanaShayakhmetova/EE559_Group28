@@ -4,13 +4,15 @@ Link to the weights for the trained model gpt2-rasch-scale (git doesn't support 
 https://www.swisstransfer.com/d/a953c5bd-5503-4944-934e-e4ad579719ca
 
 
-#### [OLD] GPT Implicit Hate Model:
+#### [OLD, ignore] GPT Implicit Hate Model:
 [Swiss transfer link](https://www.swisstransfer.com/d/3fe1c998-f216-4dfa-8759-ac2dbf9b2236)
 
-#### [UPDATED] GPT Implicit Hate Model:
+#### [UPDATED, use these] GPT Implicit Hate Model:
 
+For twitter extension:
 **Small**:[Swiss transfer link](https://www.swisstransfer.com/d/1dc8448b-50c7-4a66-882b-78b8e1b3f938)
 
+For reference:
 **Large**:[Swiss transfer link](https://www.swisstransfer.com/d/bc9c2a00-9ec9-4996-8b25-fa2e890ecbe7)
 
 
