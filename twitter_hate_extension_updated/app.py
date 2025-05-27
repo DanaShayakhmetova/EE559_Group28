@@ -173,7 +173,7 @@ def fallback_extract_target_group(raw: str) -> str:
                 return most_common[0][0].capitalize()
 
         # 3. Fallback: shortest candidate (likely to be the group label)
-        shortest_candidate = min(candidates, key=len)
+        shortest_candidate = min(filtered, key=len)
         return shortest_candidate.capitalize()
 
     except Exception as e:
