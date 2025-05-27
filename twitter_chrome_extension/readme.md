@@ -16,7 +16,7 @@
     - leave it running 
 2) Remove __py_cache__ folder after run 
 3) Upload the whole twitter_hate_extension folder onto chrome extension 
-    - [Link](chrome://extensions/)
+    - [Link] (chrome://extensions/)
     - make sure you turned on developer mode 
     - then press on "load unpacked on the upper left"
 4) log into twitter and it should be there 
