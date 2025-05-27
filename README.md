@@ -14,6 +14,12 @@ tokenizer.pad_token = tokenizer.eos_token
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
+#### [UPDATED] GPT Implicit Hate Model:
+
+**Small**:[Swiss transfer link](https://www.swisstransfer.com/d/1dc8448b-50c7-4a66-882b-78b8e1b3f938)
+
+**Large**: Will add link soon, it's loading 
+
 
 #### Bert model:
 [Swiss transfer link](https://www.swisstransfer.com/d/e9ae2ef0-f406-4d08-91a4-39344d89d5b8)
