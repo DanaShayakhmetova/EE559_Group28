@@ -70,7 +70,6 @@ def evaluate_one_epoch(model,
                 r_head_loss = regression_criterion(r_head_student_out, labels)
                 r_epoch_loss += r_head_loss.item()
 
-                # Flatten both to [B]
                 labels = labels.view(-1).cpu().numpy()
                 r_head_student_out = r_head_student_out.view(-1).cpu().numpy()
 

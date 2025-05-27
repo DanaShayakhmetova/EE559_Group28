@@ -99,12 +99,9 @@ def train_one_epoch(student_model,
                 r_teacher_out = regression_teacher(input_ids, attention_mask=attention_mask)["logits"]
             
             r_head_student_out = student_model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
-            # Put the logits on the shape : (batch_size, 1) so the size is (batch_size,)
             r_head_student_out = r_head_student_out.view(-1)
 
             total_loss = alpha * F.mse_loss(r_head_student_out, r_teacher_out) + (1 - alpha) * F.huber_loss(r_head_student_out, labels)
-
-            # total_loss = alpha * regression_loss(r_teacher_out, labels) + (1 - alpha) * regression_criterion(r_head_student_out, labels)
             head_r_loss += total_loss.item()
         else:
             raise ValueError("The task should either be 'classification' or 'regression'!")
