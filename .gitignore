@@ -12,3 +12,6 @@ __pycache__/
 
 /model_weights/
 */weights/
+
+*/gpt-v4-small/
+*/
