@@ -34,22 +34,10 @@ os.makedirs(f"{TRAIN_OUTPUT_DIR}/logs", exist_ok=True)
 
 ############################################################################################################
 # Load and preprocess raw data
-# Using the GT-SALT dataset link as primary
-url_primary = "https://raw.githubusercontent.com/GT-SALT/implicit-hate/main/implicit_hate_v1_stg3_posts.tsv"
 url_fallback = "https://raw.githubusercontent.com/DanaShayakhmetova/gpt_data/refs/heads/main/implicit_hate_v1_stg3_posts.tsv"
+df = pd.read_csv(url_fallback, sep='\t')
+print(f"Successfully loaded data")
 
-try:
-    df = pd.read_csv(url_primary, sep='\t')
-    print(f"Successfully loaded data from primary URL: {url_primary}")
-except Exception as e:
-    print(f"Failed to load data from primary URL: {e}")
-    print(f"Attempting fallback URL: {url_fallback}")
-    try:
-        df = pd.read_csv(url_fallback, sep='\t')
-        print(f"Successfully loaded data from fallback URL: {url_fallback}")
-    except Exception as e_fallback:
-        print(f"Failed to load data from fallback URL: {e_fallback}")
-        raise # Re-raise the exception if both fail
 
 # Ensure required columns exist
 required_columns = ['post', 'target', 'implied_statement']
@@ -63,11 +51,11 @@ df = df[required_columns] # Keep only necessary columns
 train_df, test_df = train_test_split(df, test_size=0.1, random_state=RANDOM_STATE)
 
 # Convert pandas to HuggingFace Dataset objects
-# train_dataset_raw = Dataset.from_pandas(train_df.reset_index(drop=True))
-# test_dataset_raw = Dataset.from_pandas(test_df.reset_index(drop=True))
+train_dataset_raw = Dataset.from_pandas(train_df.reset_index(drop=True))
+test_dataset_raw = Dataset.from_pandas(test_df.reset_index(drop=True))
 
-# print(f"Train dataset size: {len(train_dataset_raw)}")
-# print(f"Test dataset size: {len(test_dataset_raw)}")
+print(f"Train dataset size: {len(train_dataset_raw)}")
+print(f"Test dataset size: {len(test_dataset_raw)}")
 
 ############################################################################################################
 # Tokenizer setup with special tokens
@@ -122,70 +110,66 @@ def tokenize_structured_for_training(example):
     return encoding
 
 # Apply tokenization to datasets
-# print("Tokenizing datasets for training...")
-# train_dataset = train_dataset_raw.map(tokenize_structured_for_training, remove_columns=train_dataset_raw.column_names, num_proc=4) # Using num_proc for faster mapping
-# test_dataset = test_dataset_raw.map(tokenize_structured_for_training, remove_columns=test_dataset_raw.column_names, num_proc=4)
-
-# print(f"Sample tokenized input (decoded): {tokenizer.decode(train_dataset[0]['input_ids'])}")
-# print(f"Sample labels (decoded): {tokenizer.decode([l if l != -100 else tokenizer.pad_token_id for l in train_dataset[0]['labels']])}")
-
+print("Tokenizing datasets for training...")
+train_dataset = train_dataset_raw.map(tokenize_structured_for_training, remove_columns=train_dataset_raw.column_names, num_proc=4) # Using num_proc for faster mapping
+test_dataset = test_dataset_raw.map(tokenize_structured_for_training, remove_columns=test_dataset_raw.column_names, num_proc=4)
 
 ############################################################################################################
 # Load GPT-2 model and resize embeddings for new tokens
 
-# print(f"Loading pre-trained model: {MODEL_NAME}")
-# model = GPT2LMHeadModel.from_pretrained(MODEL_NAME)
-# model.resize_token_embeddings(len(tokenizer))  # Important after adding tokens
+print(f"Loading pre-trained model: {MODEL_NAME}")
+model = GPT2LMHeadModel.from_pretrained(MODEL_NAME)
+model.resize_token_embeddings(len(tokenizer))  # Important after adding tokens
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# model = model.to(device)
-# print(f"Model loaded on: {device}")
+model = model.to(device)
+print(f"Model loaded on: {device}")
 
 ############################################################################################################
 # Prepare Trainer and training arguments
 
-# training_args = TrainingArguments(
-#     output_dir=TRAIN_OUTPUT_DIR,
-#     eval_strategy="epoch",        # Evaluate at the end of each epoch
-#     save_strategy="epoch",        # Save at the end of each epoch
-#     learning_rate=LEARNING_RATE,
-#     per_device_train_batch_size=BATCH_SIZE,
-#     per_device_eval_batch_size=BATCH_SIZE,
-#     num_train_epochs=NUM_EPOCHS,
-#     weight_decay=0.01,
-#     logging_dir=f"{TRAIN_OUTPUT_DIR}/logs",
-#     logging_steps=100,             # Log every 100 steps
-#     save_total_limit=2,           # Keep only the best and the last model
-#     load_best_model_at_end=True,  # Load the best model based on eval loss at the end of training
-#     metric_for_best_model="loss", # Use eval loss to determine the best model
-#     greater_is_better=False,      # Lower loss is better
-#     remove_unused_columns=False,  # We handle columns in map
-#     fp16=torch.cuda.is_available(), # Enable mixed precision if on GPU
-#     report_to="tensorboard",      # Log to tensorboard
-# )
+training_args = TrainingArguments(
+    output_dir=TRAIN_OUTPUT_DIR,
+    eval_strategy="epoch",        # Evaluate at the end of each epoch
+    save_strategy="epoch",        # Save at the end of each epoch
+    learning_rate=LEARNING_RATE,
+    per_device_train_batch_size=BATCH_SIZE,
+    per_device_eval_batch_size=BATCH_SIZE,
+    num_train_epochs=NUM_EPOCHS,
+    weight_decay=0.01,
+    logging_dir=f"{TRAIN_OUTPUT_DIR}/logs",
+    logging_steps=100,             # Log every 100 steps
+    save_total_limit=2,           # Keep only the best and the last model
+    load_best_model_at_end=True,  # Load the best model based on eval loss at the end of training
+    metric_for_best_model="loss", # Use eval loss to determine the best model
+    greater_is_better=False,      # Lower loss is better
+    remove_unused_columns=False,  # We handle columns in map
+    fp16=torch.cuda.is_available(), # Enable mixed precision if on GPU
+    report_to="tensorboard",      # Log to tensorboard
+)
 
-# data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
-# trainer = Trainer(
-#     model=model,
-#     args=training_args,
-#     train_dataset=train_dataset,
-#     eval_dataset=test_dataset,
-#     tokenizer=tokenizer,
-#     data_collator=data_collator,
-# )
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset,
+    eval_dataset=test_dataset,
+    tokenizer=tokenizer,
+    data_collator=data_collator,
+)
 
 ############################################################################################################
 # Start training
 
-# print("Starting training...")
-# trainer.train()
+print("Starting training...")
+trainer.train()
 
-# # Save model and tokenizer
-# print(f"Saving final best model and tokenizer to {FINAL_MODEL_DIR}")
-# trainer.save_model(FINAL_MODEL_DIR) 
-# tokenizer.save_pretrained(FINAL_MODEL_DIR) 
-# print("Training complete. Model saved.")
+# Save model and tokenizer
+print(f"Saving final best model and tokenizer to {FINAL_MODEL_DIR}")
+trainer.save_model(FINAL_MODEL_DIR) 
+tokenizer.save_pretrained(FINAL_MODEL_DIR) 
+print("Training complete. Model saved.")
 
 ############################################################################################################
 
