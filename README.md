@@ -23,8 +23,6 @@ The directory structure for this project is the following:
 ├──gpt_latent_py_files <-- GPT Model for the implicit_hate_corpus dataset
 ```
 
-### Results
-
 
 
 
