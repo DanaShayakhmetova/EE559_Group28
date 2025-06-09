@@ -7,9 +7,6 @@
 
 [Swiss transfer link](https://www.swisstransfer.com/d/30e38139-bb15-45c7-b0be-cc02d44ba79a)
 
-#### [OLD, ignore] GPT Implicit Hate Model:
-
-[Swiss transfer link](https://www.swisstransfer.com/d/3fe1c998-f216-4dfa-8759-ac2dbf9b2236)
 
 #### [UPDATED, use these] GPT Implicit Hate Model:
 
