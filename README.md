@@ -1,4 +1,47 @@
-# EE559_Group28
+## EE559_Group28
+
+### Multi-Head Model for Hate Speech Recognition
+
+This is the repository for the project of the course EE559 - Deep Learning at EPFL in 2025 for the group 28.
+
+This repository contains all files used to create the results mentioned in the project report. 
+
+Please follow the instructions below to use this project and have a look at the results section to recreate our results.
+
+### Project Setup Instructions
+
+To use this project follow the setup instructions provided. You can use a `conda` environment (recommended) or a standard Python virtual environment.
+
+---
+
+### Installation Instructions
+
+
+
+
+### Project Structure
+
+The directory structure for this project is the following:
+
+```
+├── implicit-hate-corpus <- Project data files from the paper "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
+│ 
+├── twitter_hate_extension_updated <- All necessary files for the chrome extension
+│
+├── multi_teacher_distillation <- 
+│
+├── bert_latent_hatred <- Baselines models with BERT and DeBERTa - On the "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
+```
+
+
+
+### Results
+To recreate our results, you can :
+```bash
+
+```
+
+
 #### [OLD, ignore] GPT2 Regression for Rasch scale model:
 
 [Swiss transfer link](https://www.swisstransfer.com/d/a953c5bd-5503-4944-934e-e4ad579719ca)
@@ -7,9 +50,6 @@
 
 [Swiss transfer link](https://www.swisstransfer.com/d/30e38139-bb15-45c7-b0be-cc02d44ba79a)
 
-#### [OLD, ignore] GPT Implicit Hate Model:
-
-[Swiss transfer link](https://www.swisstransfer.com/d/3fe1c998-f216-4dfa-8759-ac2dbf9b2236)
 
 #### [UPDATED, use these] GPT Implicit Hate Model:
 
