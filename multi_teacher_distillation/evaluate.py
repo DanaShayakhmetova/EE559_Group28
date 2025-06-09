@@ -65,15 +65,17 @@ def evaluate_one_epoch(model,
                 epoch_class_labels.append(labels)
 
             elif from_batch == 'regression':
-                r_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]  # shape [B, 1]
+                r_head_student_out = model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
+
+                if r_head_student_out.shape != labels.shape:
+                    labels = labels.view_as(r_head_student_out)
 
                 r_head_loss = regression_criterion(r_head_student_out, labels)
                 r_epoch_loss += r_head_loss.item()
 
-                labels = labels.view(-1).cpu().numpy()
+                # Detach and flatten for metric computation
                 r_head_student_out = r_head_student_out.view(-1).cpu().numpy()
-
-                print(f"r_head_student_out: {r_head_student_out}, labels: {labels}")
+                labels = labels.view(-1).cpu().numpy()
 
                 epoch_reg_predictions.extend(r_head_student_out.tolist())
                 epoch_reg_labels.extend(labels.tolist())
@@ -125,7 +127,6 @@ def evaluate(model,
 
     print(f"Evaluating the model...")
     for epoch in tqdm(range(num_epochs), desc="Evaluating", leave=False):
-        print(f"Epoch {epoch + 1}/{num_epochs}")
         classification_loss, regression_loss, epoch_results = evaluate_one_epoch(
             model=model,
             regression_criterion=regression_criterion,

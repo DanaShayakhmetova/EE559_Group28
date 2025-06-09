@@ -49,7 +49,8 @@ class MultiHeadStudent(torch.nn.Module):
     def forward(self, input_ids, from_batch, attention_mask=None):
         model_out = self.encoder(input_ids, attention_mask=attention_mask)
 
-
+        # Define how the embedding is computed
+        # If we want to use an other pooling strategy, we can change this part
         if self.use_pooler:
             embedding = model_out.pooler_output
         else:
@@ -57,12 +58,15 @@ class MultiHeadStudent(torch.nn.Module):
             if self.use_activation:
                 embedding = self.activation_function(embedding)
 
+        # If we want to use dropout, it is applied here
         if self.use_dropout:
             dropout = torch.nn.Dropout(self.dropout_rate)
             embedding = dropout(embedding)
 
+
         if from_batch == 'classification':
             logits =  self.classification_head(embedding)
+            logits = torch.nn.functional.softmax(logits, dim=-1)
             return {'logits' : logits, 'embedding' : embedding}
         
         elif from_batch == 'regression':
@@ -71,6 +75,7 @@ class MultiHeadStudent(torch.nn.Module):
             return {'logits' : logits, 'embedding' : embedding}
         elif from_batch == 'both':
             logits_c = self.classification_head(embedding)
+            logits_c = torch.nn.functional.softmax(logits_c, dim=-1)
             logits_r = self.regression_head(embedding)
             return {'logits_c' : logits_c, 'logits_r' : logits_r, 'embedding' : embedding}
         else :

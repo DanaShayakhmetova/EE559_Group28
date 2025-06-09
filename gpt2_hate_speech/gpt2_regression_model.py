@@ -5,6 +5,11 @@ import torch
 import os
 
 class GPT2Regression(GPT2PreTrainedModel):
+    """
+    GPT-2 model for regression tasks, 
+    It consists of a GPT-2 model followed by a regression head.
+    The embeddings from the last hidden state of the GPT-2 model are used to predict a single continuous.
+    """
     def __init__(self, config): 
         super().__init__(config)
         self.gpt2 = GPT2Model(config)
@@ -58,6 +63,7 @@ class GPT2Regression(GPT2PreTrainedModel):
     def save_weights(self, save_path):
         """
         Saves the model to the specified path.
+        Saves the GPT-2 model and the regression head weights separately.
         Args:
             save_path (str): Path to save the model weights.
         """

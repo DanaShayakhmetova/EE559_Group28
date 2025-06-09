@@ -14,4 +14,10 @@ __pycache__/
 */weights/
 
 */gpt-v4-small/
-*/
+*/gpt2-small-regression-finetuned-fixed-smaller-train/
+*/saved_model_stg1_bert/
+
+/gpt2_large_regression_finetuned
+/gpt2_small_regression_finetuned/
+/saved_model_stg1_bert/
+/gpt2-small-regression-finetuned-fixed-smaller-train/

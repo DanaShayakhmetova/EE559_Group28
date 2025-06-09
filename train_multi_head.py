@@ -18,15 +18,25 @@ from multi_teacher_distillation.evaluate import evaluate
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-num_epochs = 5
-reg_test_size = 0.8
-class_test_size = 0.8
+# Run this script mulitple times on with different GPUs to test multiple seeds simultaneously, use one GPU per run (5 seeds should be enough) 
+# Then recover the results saved in the CSV files
+
+# Set the parameters for training 
+
+# Number of epochs, test sizes, and model name (small, medium, large) for the GPT-2 model
+num_epochs = 1
+reg_test_size = 0.99
+class_test_size = 0.99
+
+validation_split_reg = 0.99
+validation_split_class = 0.99
 model_name = "small"
 
 print(f"Trying to load the models")
-path = f"./gpt2-{model_name}-regression-finetuned-fixed"
+# Load the GPT-2 regression model and the BERT classification model
+path = f"./gpt2-{model_name}-regression-finetuned-fixed-smaller-train"
 _, _, regression_teacher = GPT2Regression.load_model(path, local_files_only=True)
-classification_teacher = BertForSequenceClassification.from_pretrained("./model_weights/saved_model_stg1_bert")
+classification_teacher = BertForSequenceClassification.from_pretrained("./saved_model_stg1_bert")
 print(f"model gpt2-{model_name} loaded successfully")
 
 print(f"start loading datasets")
@@ -42,7 +52,9 @@ y = df_clustering['class']
 le = LabelEncoder()
 df_clustering['label'] = le.fit_transform(df_clustering['class']) 
 
-train_regression, temp_regression = train_test_split(df_regression, test_size=reg_test_size, random_state=42)
+# Add a random state if desired for reproducibility
+train_regression, temp_regression = train_test_split(df_regression, test_size=reg_test_size)
+temp_regression, _ = train_test_split(temp_regression, test_size=validation_split_reg)
 
 train_reg_texts = train_regression['text'].tolist()
 train_reg_labels = train_regression['hate_speech_score'].tolist()
@@ -54,14 +66,13 @@ train_texts, val_texts, train_labels, val_labels = train_test_split(
     df_clustering['post'].tolist(),
     df_clustering['label'].tolist(),
     test_size=class_test_size,
-    random_state=42,
     stratify=df_clustering['label']
 )
 
 print(f"loading of datasets and data preparation done successfully")
 
 print(f"student model creation...")
-bert_model_name = 'roberta-base'
+bert_model_name = 'bert-base-uncased'  # or 'roberta-base', 'distilbert-base-uncased', etc.
 
 m_head_student = multihead_student.MultiHeadStudent(
     pretrained_model_name=bert_model_name,
@@ -71,7 +82,7 @@ m_head_student = multihead_student.MultiHeadStudent(
     activation_function=torch.nn.ReLU,
     use_dropout=False,
     dropout_rate=0.1,
-    roberta=True
+    roberta=False
 )
 
 tokenizer = m_head_student.tokenizer
@@ -85,18 +96,19 @@ val_clustering_dataset = LatentHateDataset(val_clustering_encodings, val_labels)
 train_reg_dataset = HateSpeechDataset(train_reg_texts, train_reg_labels, tokenizer)
 val_reg_dataset = HateSpeechDataset(val_reg_texts, val_reg_labels, tokenizer)
 
-clustering_train_loader = DataLoader(train_clustering_dataset, batch_size=4, shuffle=True)
-clustering_val_loader = DataLoader(val_clustering_dataset, batch_size=4, shuffle=False)
+clustering_train_loader = DataLoader(train_clustering_dataset, batch_size=1, shuffle=True)
+clustering_val_loader = DataLoader(val_clustering_dataset, batch_size=1, shuffle=False)
 
-regression_train_loader = DataLoader(train_reg_dataset, batch_size=4, shuffle=True)
-regression_val_loader = DataLoader(val_reg_dataset, batch_size=4, shuffle=False)
+regression_train_loader = DataLoader(train_reg_dataset, batch_size=1, shuffle=True)
+regression_val_loader = DataLoader(val_reg_dataset, batch_size=1, shuffle=False)
 
 optimizer = torch.optim.AdamW(m_head_student.parameters(), lr=5e-5)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 print(f"training starting...")
-alphas = [0.1, 0.3, 0.7, 0.9]
+# Change the alpha values to test different weights for the classification and regression losses
+alphas = [0.5]
 
 for alpha in alphas:
 

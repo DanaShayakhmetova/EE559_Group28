@@ -1,7 +1,7 @@
 import torch
 from gpt2_regression_model import GPT2Regression
 
-tokenizer, config, model =GPT2Regression.load_model("../model_weights/gpt2-small-regression-finetuned-fixed-smaller-train")
+tokenizer, config, model =GPT2Regression.load_model("./gpt2-small-regression-finetuned-fixed-smaller-train")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 

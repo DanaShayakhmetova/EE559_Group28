@@ -12,7 +12,6 @@ def train_one_epoch(student_model,
                     classification_teacher,  
                     regression_loader,
                     classification_loader, 
-                    regression_criterion,
                     classification_criterion,
                     optimizer, 
                     device,
@@ -52,13 +51,14 @@ def train_one_epoch(student_model,
 
     r_loader_size = len(regression_loader)
     c_loader_size = len(classification_loader)
+    # Using iterators to loaders of different tasks with different sizes
     classification_iter = iter(classification_loader)
     regression_iter = iter(regression_loader)
 
     for i in tqdm(range(n_batches), desc="Training", leave=False):
         
         optimizer.zero_grad()
-        
+        # Check for the batch source
         if (i % 2 == 0 and c_loader_size != 0) or (r_loader_size == 0):
             data = next(classification_iter)
             from_batch = 'classification'
@@ -76,34 +76,41 @@ def train_one_epoch(student_model,
         epoch_reg_labels = []
 
         if from_batch == 'classification':
+            # Classification head training
             with torch.no_grad():
-                # Three classes teacher classifier
                 c_teacher_out = classification_teacher(input_ids, attention_mask=attention_mask)["logits"]
             
+            # Convert logits to soft targets
             c_soft_target = torch.softmax(c_teacher_out / temperature, dim=-1)
             c_head_student_out = student_model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
             c_student_prob = torch.log_softmax(c_head_student_out / temperature, dim=-1)
 
+            # Use KL Divergence loss for knowledge distillation because it is usually used for soft targets
+            # since it measures the difference between two probability distributions.
             KD_loss = torch.nn.KLDivLoss(reduction='batchmean')
 
             c_head_loss = KD_loss(c_student_prob, c_soft_target) * (temperature ** 2)
             
+            # Compute the classification loss similarly to how it is done in the knowledge distillation paper
             total_loss = alpha * c_head_loss + (1 - alpha) * classification_criterion(c_head_student_out, labels)
             head_c_loss += total_loss.item()
             
         elif from_batch == 'regression':
+            # Regression head training
             labels = labels.view(-1)
 
             with torch.no_grad():
-                # Regression teacher's output 
                 r_teacher_out = regression_teacher(input_ids, attention_mask=attention_mask)["logits"]
             
+
             r_head_student_out = student_model(input_ids, from_batch, attention_mask=attention_mask)["logits"]
             r_head_student_out = r_head_student_out.view(-1)
 
             total_loss = alpha * F.mse_loss(r_head_student_out, r_teacher_out) + (1 - alpha) * F.huber_loss(r_head_student_out, labels)
             head_r_loss += total_loss.item()
         else:
+            # In training only two tasks are supported, however in inference mode we allow for getting both heads outputs
+            # at the same time.
             raise ValueError("The task should either be 'classification' or 'regression'!")
         
         total_loss.backward()
@@ -113,8 +120,6 @@ def train_one_epoch(student_model,
                 c_head_student_out = torch.argmax(c_head_student_out, dim=-1)
                 labels = labels.cpu().numpy()
                 c_head_student_out = c_head_student_out.cpu().numpy()
-                for metric_name, metric_fn in classification_metrics.items():
-                    head_c_metrics[metric_name] += metric_fn(c_head_student_out, labels)
 
             else:
                 r_head_student_out = r_head_student_out.squeeze(-1).cpu().numpy()
@@ -123,10 +128,7 @@ def train_one_epoch(student_model,
                 epoch_reg_predictions.append(r_head_student_out)
                 epoch_reg_labels.append(labels)
 
-                for metric_name, metric_fn in regression_metrics.items():
-                    head_r_metrics[metric_name] += metric_fn(r_head_student_out, labels)
-
-    
+    #log the results for the epoch
     epoch_c_loss = head_c_loss / len(classification_loader)
     epoch_r_loss = head_r_loss / len(regression_loader)
     epoch_results ={
@@ -134,6 +136,7 @@ def train_one_epoch(student_model,
         "classification_loss": epoch_c_loss,
         "regression_loss": epoch_r_loss,
     }
+    
 
     for metric_name, metric_value in head_c_metrics.items():
         epoch_results[f"classification_{metric_name}"] = metric_value.item() if isinstance(metric_value, torch.Tensor) else metric_value
@@ -171,9 +174,9 @@ def train(model,
     if not os.path.exists(log_path):
         os.makedirs(log_path)
 
-    regression_criterion = torch.nn.MSELoss()
     classification_criterion = torch.nn.CrossEntropyLoss()
 
+    # Define the metrics for classification and regression tasks they are the same as for BERT model
     classification_metrics = {
         'accuracy': accuracy_score,
         'precision': lambda y_pred, y_true: precision_score(y_true, y_pred, average='macro', zero_division=0),
@@ -181,6 +184,7 @@ def train(model,
         'f1': lambda y_pred, y_true: f1_score(y_true, y_pred, average='macro', zero_division=0)
     }
     
+    # Regression metrics, these are the same as for the Rasch-scale GPT model
     regression_metrics = {
         'mse': mean_squared_error,
         'mae': mean_absolute_error
@@ -199,7 +203,6 @@ def train(model,
                         classification_teacher, 
                         regression_loader, 
                         classification_loader, 
-                        regression_criterion, 
                         classification_criterion, 
                         optimizer, 
                         device,

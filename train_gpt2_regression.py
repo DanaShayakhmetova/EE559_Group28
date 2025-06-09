@@ -13,13 +13,21 @@ from gpt2_hate_speech.gpt2_regression_model import GPT2Regression
 from gpt2_hate_speech.hate_speech_dataset import HateSpeechDataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
+
+train_size = 0.99
+test_size = 0.99
+
+batch_size = 1
+num_epochs = 1
+
+
 dataset = load_dataset("ucberkeley-dlab/measuring-hate-speech", "default")
 df = dataset['train'].to_pandas()
 
 df = df[["text", "hate_speech_score"]].dropna()
 
-train_df, temp_df = train_test_split(df, test_size=0.2, random_state=42)
-valid_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42)
+train_df, temp_df = train_test_split(df, test_size=train_size)
+valid_df, test_df = train_test_split(temp_df, test_size=test_size)
 
 train_text = train_df["text"].to_list()
 train_labels = train_df["hate_speech_score"].to_list()
@@ -45,13 +53,13 @@ train_dataset = HateSpeechDataset(train_text, train_labels, tokenizer)
 val_dataset = HateSpeechDataset(val_text, val_labels, tokenizer)
 test_dataset = HateSpeechDataset(test_text, test_labels, tokenizer)
 
-train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=1)
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size)
 torch.cuda.empty_cache()
 
 # Prepare the model using the pretrained GPT2 config and model
-config = GPT2Config.from_pretrained("gpt2-medium")
-model = GPT2Regression.from_pretrained("gpt2-medium", config=config)
+config = GPT2Config.from_pretrained("gpt2-small")
+model = GPT2Regression.from_pretrained("gpt2-small", config=config)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
@@ -70,7 +78,7 @@ loss_at_epoch = []
 regression_metric = dict(zip(metric.keys(), torch.zeros(len(metric), device=device)))
 
 print(f"Training on {device}")
-for epoch in range(5):
+for epoch in range(num_epochs):
     model.train()
     total_loss = 0
 
