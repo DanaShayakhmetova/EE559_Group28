@@ -12,13 +12,15 @@ This repository contains all files used to create the results mentioned in the p
 The directory structure for this project is the following:
 
 ```
-├── implicit-hate-corpus <- Project data files from the paper "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
+├── implicit-hate-corpus <-- Project data files from the paper "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
 │ 
-├── twitter_hate_extension_updated <- All necessary files to run the chrome extension
+├── twitter_hate_extension_updated <-- All necessary files to run the chrome extension
 │
-├── multi_teacher_distillation <- 
+├── multi_teacher_distillation <-- 
 │
-├── bert_latent_hatred <- Baselines models with BERT and DeBERTa - On the "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
+├── bert_latent_hatred <-- Baselines models BERT and DeBERTa on the implicit_hate_corpus dataset
+│
+├──gpt_latent_py_files <-- GPT Model for the implicit_hate_corpus dataset
 ```
 
 ### Results
