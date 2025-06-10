@@ -6,40 +6,24 @@ This is the repository for the project of the course EE559 - Deep Learning at EP
 
 This repository contains all files used to create the results mentioned in the project report. 
 
-Please follow the instructions below to use this project and have a look at the results section to recreate our results.
-
-### Project Setup Instructions
-
-To use this project follow the setup instructions provided. You can use a `conda` environment (recommended) or a standard Python virtual environment.
-
----
-
-### Installation Instructions
-
-
-
 
 ### Project Structure
 
 The directory structure for this project is the following:
 
 ```
-├── implicit-hate-corpus <- Project data files from the paper "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
+├── implicit-hate-corpus <-- Project data files from the paper "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
 │ 
-├── twitter_hate_extension_updated <- All necessary files for the chrome extension
+├── twitter_hate_extension_updated <-- All necessary files to run the chrome extension
 │
-├── multi_teacher_distillation <- 
+├── multi_teacher_distillation <-- 
 │
-├── bert_latent_hatred <- Baselines models with BERT and DeBERTa - On the "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
+├── bert_latent_hatred <-- Baselines models BERT and DeBERTa on the implicit_hate_corpus dataset
+│
+├──gpt_latent_py_files <-- GPT Model for the implicit_hate_corpus dataset
 ```
 
 
-
-### Results
-To recreate our results, you can :
-```bash
-
-```
 
 
 #### [OLD, ignore] GPT2 Regression for Rasch scale model:
