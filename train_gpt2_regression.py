@@ -13,7 +13,7 @@ from gpt2_hate_speech.gpt2_regression_model import GPT2Regression
 from gpt2_hate_speech.hate_speech_dataset import HateSpeechDataset
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-
+# These values are like that only for the sake of this video
 train_size = 0.99
 test_size = 0.99
 
@@ -125,8 +125,8 @@ for epoch in range(num_epochs):
     loss_at_epoch.append(total_loss/len(train_loader))
 
 
-model.save_weights("./gpt2-medium-regression-finetuned-fixed")
-tokenizer.save_pretrained("./gpt2-medium-regression-finetuned-fixed")
+model.save_weights("./gpt2-small-test-regression-finetuned-fixed")
+tokenizer.save_pretrained("./gpt2-small-test-regression-finetuned-fixed")
 dataframe = pd.DataFrame(loss_at_epoch, columns=["loss"])
 dataframe.to_csv("medium.csv", index=False)
 
