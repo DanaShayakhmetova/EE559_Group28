@@ -6,6 +6,9 @@ This is the repository for the project of the course EE559 - Deep Learning at EP
 
 This repository contains all files used to create the results mentioned in the project report. 
 
+Weights for the Multi-Head Model (bert model weights, GPT-2 Rasch scale model and Multi-Head Model trained weights)
+[Swiss transfer link](https://www.swisstransfer.com/d/64d5427c-63ee-4bdd-ba31-fe343f1d409b)
+
 
 ### Project Structure
 
