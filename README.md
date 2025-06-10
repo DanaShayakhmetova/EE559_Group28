@@ -18,7 +18,7 @@ then run :
 `python3 gpt2_hate_speech/inference.py`
 
 - To train GPT2-Rasch scale, run:
-`python3 train_gpt2_regression`
+`python3 train_gpt2_regression.py`
 
 - To train Multi-Head model, run:
 `python3 train_multi_head.py` 
@@ -27,16 +27,22 @@ then run :
 
 ### Project Structure
 
-The directory structure for this project is the following:
+The directory structure of the main files for this project is the following :
 
 ```
+├── bert_latent_hatred <-- Baselines models BERT and DeBERTa on the implicit_hate_corpus dataset
+│ 
 ├── implicit-hate-corpus <-- Project data files from the paper "Latent Hatred: A Benchmark for Understanding Implicit Hate Speech" 
 │ 
 ├── twitter_hate_extension_updated <-- All necessary files to run the chrome extension
 │
-├── multi_teacher_distillation <-- 
+├── gpt2_hate_speech/inference.py <--  run in inference with GPT2-Rasch scale
 │
-├── bert_latent_hatred <-- Baselines models BERT and DeBERTa on the implicit_hate_corpus dataset
+├── multi_head_inference.py <-- inference mode with the Multi-Head trained weights
+│
+├── train_gpt2_regression.py <-- To train GPT2-Rasch scale
+│
+├── train_multi_head.py <-- train Multi-Head model
 │
 ├──gpt_latent_py_files <-- GPT Model for the implicit_hate_corpus dataset
 ```
