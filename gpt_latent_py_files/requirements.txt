@@ -1,0 +1,13 @@
+transformers
+evaluate
+datasets
+tokenizers
+accelerate
+lime
+sentence-transformers
+nltk
+rouge_score
+
+
+
+
