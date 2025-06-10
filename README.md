@@ -41,19 +41,12 @@ The directory structure for this project is the following:
 ├──gpt_latent_py_files <-- GPT Model for the implicit_hate_corpus dataset
 ```
 
-
-
-
-#### [OLD, ignore] GPT2 Regression for Rasch scale model:
-
-[Swiss transfer link](https://www.swisstransfer.com/d/a953c5bd-5503-4944-934e-e4ad579719ca)
-
-#### [UPDATED, use these] GPT2 Regression for Rasch scale model:
+#### GPT2 Regression for Rasch scale model:
 
 [Swiss transfer link](https://www.swisstransfer.com/d/30e38139-bb15-45c7-b0be-cc02d44ba79a)
 
 
-#### [UPDATED, use these] GPT Implicit Hate Model:
+#### GPT Implicit Hate Model:
 
 For twitter extension:
 
