@@ -11,6 +11,19 @@ Weights for the Multi-Head Model (bert model weights, GPT-2 Rasch scale model an
 
 To work properly the weights must be added to at the root of the project
 
+then run : 
+`python3 multi_head_inference.py` to enter inference mode with the Multi-Head trained weights
+
+- To run in inference with GPT2-Rasch scale, run:
+`python3 gpt2_hate_speech/inference.py`
+
+- To train GPT2-Rasch scale, run:
+`python3 train_gpt2_regression`
+
+- To train Multi-Head model, run:
+`python3 train_multi_head.py` 
+
+
 
 ### Project Structure
 
