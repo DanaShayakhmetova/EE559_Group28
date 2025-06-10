@@ -38,7 +38,7 @@ val_labels = valid_df["hate_speech_score"].to_list()
 test_text = test_df["text"].to_list()
 test_labels = test_df["hate_speech_score"].to_list()
 
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2-small")
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 tokenizer.pad_token = tokenizer.eos_token
 
 
@@ -57,9 +57,9 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batch_size)
 torch.cuda.empty_cache()
 
-# Prepare the model using the pretrained GPT2 config and model
-config = GPT2Config.from_pretrained("gpt2-small")
-model = GPT2Regression.from_pretrained("gpt2-small", config=config)
+# Prepare the model using the pretrained GPT2 config and model gpt2 correspond to the small version
+config = GPT2Config.from_pretrained("gpt2")
+model = GPT2Regression.from_pretrained("gpt2", config=config)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
