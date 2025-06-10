@@ -38,7 +38,7 @@ val_labels = valid_df["hate_speech_score"].to_list()
 test_text = test_df["text"].to_list()
 test_labels = test_df["hate_speech_score"].to_list()
 
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2-large")
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2-small")
 tokenizer.pad_token = tokenizer.eos_token
 
 
@@ -128,11 +128,11 @@ for epoch in range(num_epochs):
 model.save_weights("./gpt2-small-test-regression-finetuned-fixed")
 tokenizer.save_pretrained("./gpt2-small-test-regression-finetuned-fixed")
 dataframe = pd.DataFrame(loss_at_epoch, columns=["loss"])
-dataframe.to_csv("medium.csv", index=False)
+dataframe.to_csv("small_test.csv", index=False)
 
-run_metric_evalution("./gpt2-medium-regression-finetuned-fixed",
+run_metric_evalution("./gpt2-small-test-regression-finetuned-fixed",
                      test_loader=val_loader,
                      metric=metric,
                      num_epoch=5,
-                     log_path = "./eval-logs-gpt2-medium/",
+                     log_path = "./eval-logs-gpt2-small-test/",
                      device=device)
