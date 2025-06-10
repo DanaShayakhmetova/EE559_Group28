@@ -62,4 +62,4 @@ For reference:
 
 ### DeBERTa modelL
 
-[Swiss transfer link] (https://www.swisstransfer.com/d/ad4e9e6e-8ee6-446c-8f79-6bc7884b3dea)
+[Swiss transfer link](https://www.swisstransfer.com/d/ad4e9e6e-8ee6-446c-8f79-6bc7884b3dea)
