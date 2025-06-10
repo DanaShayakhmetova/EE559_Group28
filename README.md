@@ -9,6 +9,8 @@ This repository contains all files used to create the results mentioned in the p
 Weights for the Multi-Head Model (bert model weights, GPT-2 Rasch scale model and Multi-Head Model trained weights)
 [Swiss transfer link](https://www.swisstransfer.com/d/64d5427c-63ee-4bdd-ba31-fe343f1d409b)
 
+To work properly the weights must be added to at the root of the project
+
 
 ### Project Structure
 
